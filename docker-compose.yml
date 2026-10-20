@@ -1,0 +1,10 @@
+services:
+
+  pinghome:
+    image: py_env:v1.0
+    container_name: pinghome
+    restart: on-failure:3
+    volumes:
+      - ./py/resources:/resources
+      - ./py/monitoring_ping:/app
+

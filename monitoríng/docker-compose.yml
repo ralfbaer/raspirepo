@@ -1,0 +1,103 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    volumes:
+      #- grafana_data:/var/lib/grafana
+      - /home/baer/gitrepos/ralfraspi/data/grafana/data:/var/lib/grafana
+      - /home/baer/gitrepos/ralfraspi/data/grafana/dashboards:/var/lib/grafana/dashboards
+      - /home/baer/gitrepos/ralfraspi/data/grafana/provisioning:/etc/grafana/provisioning
+      #- ./grafana/config/custom.ini:/etc/grafana/grafana.ini
+      #- ./grafana/certs:/etc/ssl:ro
+    restart: always
+    networks:
+       -  monitoring
+    container_name: grafana
+    user: "root"
+
+  prometheus:
+    image: prom/prometheus:v3.4.2
+#    image: prom/prometheus
+#    user: root
+    volumes:
+      - /home/baer/gitrepos/ralfraspi/data/prometheus/_conf:/etc/prometheus/
+      - /home/baer/gitrepos/ralfraspi/data/prometheus/_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=365d'
+    ports:
+      - 9090:9090
+    restart: always
+    networks:
+       - monitoring
+    container_name: prometheus
+    user: "root"
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    restart: always
+    #user: "root"
+    networks: 
+      - monitoring
+    ports:
+      - "8086:8086"
+    #volumes:
+    #  - /mnt/SSD240/data/data/influxdb/data:/var/lib/influxdb
+    #  - /mnt/SSD240/data/data/influxdb.conf:/etc/influxdb/influxdb.conf:ro
+    #  - /mnt/SSD240/data/data/influxdb/init:/docker-entrypoint-initdb.d
+    volumes:
+      - /mnt/SSD240/data/config:/etc/influxdb2
+      - /mnt/SSD240/data/influxdb2/data:/home/influxdb/.influxdbv2/
+      - /mnt/SSD240/data/influxdb2/influxdb2:/etc/defaults/influxdb2
+
+  cadvisor:
+    image: klo2k/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    networks:
+      - monitoring
+    ports:
+      - 9101:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    user: "root"
+
+  nodeexporter:
+    #mage: quay.io/prometheus/node-exporter:latest
+    image: prom/node-exporter-linux-arm64:latest
+    container_name: nodeexporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - 9100:9100
+    networks:
+      - monitoring
+    user: "root"
+  fritz-exporter:
+    image: pdreker/fritz_exporter:latest
+    container_name: fritz-exporter
+    restart: unless-stopped
+    environment:
+      FRITZ_HOSTNAME: fritz.box
+      FRITZ_USERNAME: fb-prom
+      FRITZ_PASSWORD: dkjldsg678wjlksdso&uiuee(/8
+    ports:
+      - "9787:9787"
+
+networks:
+    monitoring:

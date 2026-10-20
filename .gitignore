@@ -1,0 +1,47 @@
+# Python: Bytecode und Caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtuelle Umgebung (gemeinsames venv wird nie eingecheckt)
+.venv/
+venv/
+env/
+
+# Logs: alle .log-Dateien und Log-Verzeichnisse
+*.log
+log/
+logs/
+
+# Secrets und Zugangsdaten
+.env
+*.env
+*_env
+.*_env
+# Ausnahme: Verzeichnis py_env endet auf _env, ist aber kein Secret
+!py_env/
+!py_env/**
+backupcloud/rclone.conf
+*.pem
+*.key
+*.p12
+id_rsa*
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+
+# Editor-Reste
+*.swp
+*.swo
+*~
+.idea/

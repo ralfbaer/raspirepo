@@ -1,0 +1,21 @@
+FROM python:alpine
+WORKDIR /app
+
+COPY requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt
+
+RUN apk update
+RUN apk add procps
+#RUN apk install curl -y
+#RUN apk update && apk add telnet
+RUN apk add busybox-extras
+RUN apk add libaio
+#RUN apk update && apk add chromium-chromedriver
+#RUN apk add libnss3
+RUN apk add  --no-cache nss
+
+
+COPY . .
+ADD jobstarter.sh /
+RUN chmod +x /jobstarter.sh
+CMD ["/jobstarter.sh"]

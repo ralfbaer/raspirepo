@@ -1,0 +1,13 @@
+config:
+  ExporterPort: 9102
+
+loglist:
+  scrape_list:
+    - name: "dokumente_local"
+      path: "/mnt/BaerNas/Raspberry/nasbackup/RCLONE_LocalBackup_RP5.log.dokumente.log"
+    - name: "bilder_local"
+      path: "/mnt/BaerNas/Raspberry/nasbackup/RCLONE_LocalBackup_RP5.log.bilder.log"
+    - name: "dokumente_cloud"
+      path: "/mnt/BaerNas/Raspberry/nasbackup/RCLONE_CloudBackup.log.dokumente.log"
+    - name: "bilder_cloud"
+      path: "/mnt/BaerNas/Raspberry/nasbackup/RCLONE_CloudBackup.log.bilder.log"

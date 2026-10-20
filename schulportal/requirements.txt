@@ -1,0 +1,8 @@
+# Abhängigkeiten für das Projekt schulportal.
+# Gemeinsames venv im Stammverzeichnis, Versionen gepinnt.
+playwright==1.64.0
+fpdf2==2.8.9
+pyyaml==6.0.3
+
+# Hinweis: playwright benötigt zusätzlich die Browser-Binärdatei:
+#   .venv/bin/playwright install chromium

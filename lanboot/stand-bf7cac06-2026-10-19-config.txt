@@ -1,0 +1,22 @@
+# config.txt fuer den Netboot-Client raspberrypi3b (Serial bf7cac06)
+# Wird per TFTP aus /srv/tftpboot/bf7cac06/ geladen.
+
+# 64-Bit-Kernel (kernel8.img)
+arm_64bit=1
+
+# WICHTIG: kein auto_initramfs.
+# Das NFS-Root wird direkt vom Kernel gemountet (CONFIG_ROOT_NFS),
+# ein initramfs wuerde sich dazwischendraengen und root=/dev/nfs nicht
+# aufloesen koennen.
+
+dtparam=audio=on
+camera_auto_detect=1
+display_auto_detect=1
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+disable_fw_kms_setup=1
+disable_overscan=1
+
+# Serielle Konsole aktiv lassen - bei Netboot-Problemen die einzige
+# Moeglichkeit, ohne Monitor an Bootmeldungen zu kommen.
+enable_uart=1

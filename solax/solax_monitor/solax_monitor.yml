@@ -1,0 +1,12 @@
+config:
+  loglevel: "INFO"
+
+solax:
+  ip_adresse: "${SOLAX_IP}"
+  modbus_port: 502
+  unit_id: 1
+  timeout: 10
+
+monitor:
+  intervall_sekunden: 10
+  datenbank_pfad: "solax_data.db"

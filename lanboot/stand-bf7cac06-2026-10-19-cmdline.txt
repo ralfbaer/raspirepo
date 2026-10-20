@@ -1,0 +1,1 @@
+console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=192.168.188.26:/mnt/HD/HD_a2/pi/netboot/bf7cac06-2026-10-19,vers=3,nolock,proto=tcp,hard,rsize=32768,wsize=32768 rw ip=dhcp rootfstype=nfs fsck.repair=no cfg80211.ieee80211_regdom=DE

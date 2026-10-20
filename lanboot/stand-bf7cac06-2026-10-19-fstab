@@ -1,0 +1,20 @@
+# fstab fuer den Netboot-Client raspberrypi3b
+#
+# KEIN Eintrag fuer "/" - das Root-Dateisystem mountet der Kernel selbst
+# anhand von root=/dev/nfs und nfsroot=... aus der cmdline.txt. Dort steht
+# zwangsweise eine IP, weil zu diesem Zeitpunkt noch kein Resolver existiert.
+# KEIN Eintrag fuer /boot/firmware - es gibt keine SD-Karte mehr.
+# KEIN Swap - eine Swap-Datei ueber NFS waere quaelend langsam.
+# zram-Swap laeuft weiterhin, der liegt im RAM.
+
+proc  /proc  proc  defaults  0  0
+
+# Umzug am 18.10.2026: Der Pfad folgt jetzt dem Muster des 4B,
+# pi/home/<hostname>/baer statt des historisch flachen pi/home/baer.
+# Wirksam erst beim naechsten Start, systemd liest die fstab nur beim Boot.
+# Der alte Pfad pi/home/baer existiert weiter, als Rueckweg.
+#
+# Eigenes Home-Verzeichnis vom NAS.
+# nofail: ein DNS- oder NAS-Aussetzer soll den Start nicht blockieren,
+# das System bootet dann ohne Home weiter und bleibt erreichbar.
+baernas:/mnt/HD/HD_a2/pi/home/raspberrypi3b/bf7cac06-2026-10-19/baer  /home/baer  nfs  vers=3,nolock,hard,_netdev,nofail  0  0

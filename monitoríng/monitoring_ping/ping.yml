@@ -1,0 +1,14 @@
+config:
+  scrapetime: 30
+  scrapelist:
+    - "tgnet.de:80"
+    - "wikipedia.com:80"
+    - "BaerNas:80"
+
+  pingtimeout: 10
+
+  InfluxDB_URL: raspberrypi.fritz.box:8086
+  InfluxDB_ORG: privat
+  InfluxDB_BUCKET: ping@home
+  InfluxDB_Measurement: ping
+  InfluxDB_APIKey: -YDreTu4f93UbvzIAMcokEIzMmPHR6hzyMp6lengkpsy3AUCfOFQRvD_DbznQrJY80FFfllUaRFN-Zmv1l53Mw==

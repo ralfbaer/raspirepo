@@ -1,0 +1,18 @@
+# fstab fuer den Netboot-Client raspberrypi4b (Serial 451ba057)
+#
+# KEIN Eintrag fuer "/" - das Root-Dateisystem mountet der Kernel selbst
+# anhand von root=/dev/nfs und nfsroot=... aus der cmdline.txt. Dort steht
+# zwangsweise eine IP, weil zu diesem Zeitpunkt noch kein Resolver existiert.
+# KEIN Eintrag fuer /boot/firmware - es gibt keine SD-Karte mehr, und das
+# Verzeichnis liegt im Rootfs auf dem NAS, wo TFTP es per Symlink ausliefert.
+# KEIN Swap - eine Swap-Datei ueber NFS waere quaelend langsam.
+# zram-Swap laeuft weiterhin, der liegt im RAM.
+# KEINE NAS-Mounts auf /srv/nfs - das war die Serverrolle, die jetzt der 5B hat.
+
+proc  /proc  proc  defaults  0  0
+
+# Eigenes Home-Verzeichnis vom NAS, pro Rechnername getrennt, damit sich
+# mehrere Clients mit demselben Benutzernamen nicht gegenseitig ueberschreiben.
+# nofail: ein DNS- oder NAS-Aussetzer soll den Start nicht blockieren,
+# das System bootet dann ohne Home weiter und bleibt erreichbar.
+baernas:/mnt/HD/HD_a2/pi/home/raspberrypi4b/451ba057-2026-10-19/baer  /home/baer  nfs  vers=3,nolock,hard,_netdev,nofail  0  0

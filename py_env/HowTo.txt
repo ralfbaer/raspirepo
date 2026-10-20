@@ -1,0 +1,23 @@
+Build and run a venv for Python:
+
+python3 -m venv .venv
+source .venv/bin/activate
+nano 
+
+
+Build the docker image:
+
+cd /root/mapcloudmonitoring/deploytool
+
+    activate venv:
+        source .venv/Scripts/activate
+
+    make the changes you have to do
+    if python packeges needs to load, save it to the requitements.txt:
+        python3 -m pip freeze > requirements.txt
+
+    build-tag and push the docker image:
+        docker build --tag py_env .
+        docker tag py_env:latest mapcloud-docker-stage-dev-local.bahnhub.tech.rz.db.de/py_env:<version>
+        docker login mapcloud-docker-stage-dev-local.bahnhub.tech.rz.db.de
+        docker push mapcloud-docker-stage-dev-local.bahnhub.tech.rz.db.de/py_env:<version>

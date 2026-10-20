@@ -1,0 +1,8 @@
+typ=4b
+serial=451ba057
+stand=451ba057-2026-10-19
+hostname=raspberrypi4b
+home=/mnt/HD/HD_a2/pi/home/raspberrypi4b/451ba057-2026-10-19/baer
+angelegt=2026-10-19T07:52:24
+herkunft=451ba057
+notiz=Docker 26.1.5, Compose 2.26.1-4, Python 3.13.5

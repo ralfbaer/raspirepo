@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SolaX Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ SolaX Dashboard</h1>
+            <div class="status">
+                <span id="last-update">Lade Daten...</span>
+                <div class="status-indicator" id="status-indicator"></div>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- PV-Produktion -->
+            <div class="card pv-card">
+                <h2>🌞 PV-Produktion</h2>
+                <div class="main-value">
+                    <span id="pv-gesamt">0</span> W
+                </div>
+                <div class="sub-values">
+                    <div class="pv-string">
+                        <span class="label">PV1:</span>
+                        <span id="pv1-leistung">0</span> W
+                        <small>(<span id="pv1-spannung">0</span>V, <span id="pv1-strom">0</span>A)</small>
+                    </div>
+                    <div class="pv-string">
+                        <span class="label">PV2:</span>
+                        <span id="pv2-leistung">0</span> W
+                        <small>(<span id="pv2-spannung">0</span>V, <span id="pv2-strom">0</span>A)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batterie -->
+            <div class="card battery-card">
+                <h2>🔋 Batterie</h2>
+                <div class="main-value">
+                    <span id="batterie-soc">0</span>%
+                </div>
+                <div class="battery-bar">
+                    <div class="battery-fill" id="battery-fill"></div>
+                </div>
+                <div class="sub-values">
+                    <div><span class="label">Leistung:</span> <span id="batterie-leistung">0</span> W</div>
+                    <div><span class="label">Spannung:</span> <span id="batterie-spannung">0</span> V</div>
+                    <div><span class="label">Temperatur:</span> <span id="batterie-temperatur">0</span> °C</div>
+                </div>
+            </div>
+
+            <!-- Netz -->
+            <div class="card grid-card">
+                <h2>🏠 Netz</h2>
+                <div class="main-value" id="netz-hauptwert">
+                    <span id="netz-leistung">0</span> W
+                </div>
+                <div class="netz-status" id="netz-status">Ausgeglichen</div>
+                <div class="sub-values">
+                    <div><span class="label">Eigenverbrauch:</span> <span id="eigenverbrauch">0</span> W</div>
+                    <div><span class="label">WR-Ausgang:</span> <span id="wr-leistung">0</span> W</div>
+                </div>
+            </div>
+
+            <!-- Tages-Bilanz -->
+            <div class="card daily-card">
+                <h2>📊 Heute</h2>
+                <div class="daily-stats">
+                    <div class="stat export">
+                        <div class="stat-value"><span id="export-heute">0</span> kWh</div>
+                        <div class="stat-label">Einspeisung</div>
+                    </div>
+                    <div class="stat import">
+                        <div class="stat-value"><span id="import-heute">0</span> kWh</div>
+                        <div class="stat-label">Bezug</div>
+                    </div>
+                    <div class="stat net">
+                        <div class="stat-value"><span id="netto-heute">0</span> kWh</div>
+                        <div class="stat-label">Netto</div>
+                    </div>
+                </div>
+                <div class="sub-values">
+                    <div><span class="label">Ertrag heute:</span> <span id="ertrag-heute">0</span> kWh</div>
+                </div>
+            </div>
+
+            <!-- Tages-Verlauf Graph -->
+            <div class="card graph-card">
+                <h2>📈 Tages-Verlauf</h2>
+                <div class="graph-controls">
+                    <div class="date-controls">
+                        <label for="start-date">Von:</label>
+                        <input type="datetime-local" id="start-date" class="date-input">
+                        <label for="end-date">Bis:</label>
+                        <input type="datetime-local" id="end-date" class="date-input">
+                        <button id="update-graph" class="update-btn">Aktualisieren</button>
+                        <button id="reset-graph" class="reset-btn">Letzte 4h</button>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <canvas id="tagesChart" width="400" height="200"></canvas>
+                </div>
+                <div class="graph-legend">
+                    <div class="legend-item">
+                        <span class="legend-color pv"></span>
+                        <span>PV-Produktion</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color netz"></span>
+                        <span>Netz-Einspeisung</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color wallbox"></span>
+                        <span>Wallbox-Ladung</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color eigenverbrauch"></span>
+                        <span>Eigenverbrauch</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gesamt-Statistiken -->
+            <div class="card total-card">
+                <h2>📈 Gesamt</h2>
+                <div class="sub-values">
+                    <div><span class="label">Export gesamt:</span> <span id="export-gesamt">0</span> kWh</div>
+                    <div><span class="label">Import gesamt:</span> <span id="import-gesamt">0</span> kWh</div>
+                    <div><span class="label">Netto gesamt:</span> <span id="netto-gesamt">0</span> kWh</div>
+                    <div><span class="label">Ertrag gesamt:</span> <span id="ertrag-gesamt">0</span> kWh</div>
+                </div>
+            </div>
+
+            <!-- Wechselrichter -->
+            <div class="card inverter-card">
+                <h2>⚙️ Wechselrichter</h2>
+                <div class="sub-values">
+                    <div><span class="label">Spannung:</span> <span id="wr-spannung">0</span> V</div>
+                    <div><span class="label">Strom:</span> <span id="wr-strom">0</span> A</div>
+                    <div><span class="label">Temperatur:</span> <span id="wr-temperatur">0</span> °C</div>
+                </div>
+            </div>
+
+            <!-- Wallbox -->
+            <div class="card wallbox-card">
+                <h2>🚗 Wallbox</h2>
+                <div class="main-value" id="wallbox-hauptwert">
+                    <span id="wallbox-leistung">0</span> W
+                </div>
+                <div class="wallbox-status" id="wallbox-status">Nicht aktiv</div>
+                <div class="sub-values">
+                    <div><span class="label">Ladung heute:</span> <span id="wallbox-ladung-heute">5.0</span> kWh</div>
+                    <div><span class="label">Ladung gesamt:</span> <span id="wallbox-ladung-gesamt">0</span> kWh</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v={{ timestamp }}"></script>
+</body>
+</html>

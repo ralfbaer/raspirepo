@@ -1,0 +1,32 @@
+# config.txt fuer den Netboot-Client raspberrypi4b (Serial 451ba057)
+# Wird per TFTP aus tftpboot/451ba057/ geladen, was ein Symlink auf
+# netboot/451ba057/boot/firmware ist.
+
+# 64-Bit-Kernel (kernel8.img)
+arm_64bit=1
+
+# WICHTIG: kein auto_initramfs.
+# Das NFS-Root mountet der Kernel direkt ueber CONFIG_ROOT_NFS. Ein initramfs
+# wuerde sich dazwischendraengen und root=/dev/nfs nicht aufloesen koennen.
+# In der SD-config.txt des 4B stand auto_initramfs=1 - hier bewusst entfernt.
+
+dtparam=audio=on
+camera_auto_detect=1
+display_auto_detect=1
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+disable_fw_kms_setup=1
+disable_overscan=1
+arm_boost=1
+
+# Serielle Konsole aktiv lassen - bei Netboot-Problemen die einzige
+# Moeglichkeit, ohne Monitor an Bootmeldungen zu kommen.
+enable_uart=1
+
+[cm4]
+otg_mode=1
+[cm5]
+dtoverlay=dwc2,dr_mode=host
+[pi5]
+dtoverlay=nospi10
+[all]

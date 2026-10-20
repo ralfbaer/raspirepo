@@ -1,0 +1,24 @@
+config:
+  s3_logpath: /log/tmp
+  loglevel: "INFO"
+
+schulportal:
+  login_url: "https://login.schulportal.hessen.de/?i=6087#"
+  unterricht_url: "https://start.schulportal.hessen.de/meinunterricht.php"
+  benutzername: "fineas.baer"
+  kennwort: "Kletterbär2011#"
+  headless: true
+  ausgabe_datei: "zusammenfassung.txt"
+  # Anzahl Einträge pro Fach, die immer angezeigt werden (danach nur Auffälligkeiten)
+  immer_anzeigen: 2
+  # Maximale Anzahl Fächer (0 = alle, zum Testen z.B. 2)
+  max_faecher: 0
+  # Maximale Anzahl Zeilen pro Fach in der Ausgabe (0 = unbegrenzt)
+  max_zeilen_pro_fach: 10
+
+mail:
+  smtp_server: "server6.web4a.de"             # SMTP-Server (Host)
+  port: 465                                   # SMTP-Port (465 = SSL)
+  user: "ralf@die-baers.de"                   # SMTP-Login-Benutzer (zugleich Absender)
+  password: "AmpiWS4A2308#1"                  # SMTP-Login-Passwort
+  empfaenger: "ralf.baer@gmail.com"           # Empfängeradresse der Zusammenfassungs-Mail
