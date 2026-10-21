@@ -27,7 +27,7 @@ from pathlib import Path
 
 import yaml
 
-from einstellungen import (
+from submodule.einstellungen import (
     PROTOKOLLSTUFEN,
     STANDARD_BILDRATE,
     STANDARD_BREITE,
@@ -38,7 +38,12 @@ from einstellungen import (
     Kameraeinstellung,
     Zeiten,
 )
-from kamera import FORMATWAHL, geraet_aufloesen, kameras_erkennen, kennung_bilden
+from submodule.kamera import (
+    FORMATWAHL,
+    geraet_aufloesen,
+    kameras_erkennen,
+    kennung_bilden,
+)
 
 log = logging.getLogger(__name__)
 

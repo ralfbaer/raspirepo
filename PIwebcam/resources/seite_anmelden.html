@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Anmelden &ndash; {{TITEL}}</title>
+<link rel="stylesheet" href="/stil.css">
+</head>
+<body>
+<div class="huelle huelle--schmal">
+
+  <header class="kopf">
+    <h1>{{TITEL}}</h1>
+    <p class="unterzeile">Bitte anmelden, um die Kamerabilder zu sehen.</p>
+  </header>
+
+  <main>
+    <form class="anmeldung" method="post" action="/anmelden" autocomplete="on">
+      {{MELDUNG}}
+      <label for="benutzer">Benutzer</label>
+      <input type="text" id="benutzer" name="benutzer"
+             autocomplete="username" autofocus required>
+
+      <label for="passwort">Passwort</label>
+      <input type="password" id="passwort" name="passwort"
+             autocomplete="current-password" required>
+
+      <button type="submit">Anmelden</button>
+    </form>
+  </main>
+
+  <footer>
+    <p>Die Anmeldung gilt bis zum Abmelden, längstens einige Stunden.</p>
+  </footer>
+
+</div>
+</body>
+</html>

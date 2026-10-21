@@ -1,6 +1,6 @@
 # webcam — Arbeitsstand (für Kiro, nicht für menschliche Leser)
 
-Letzte Aktualisierung: 2026-10-20
+Letzte Aktualisierung: 2026-10-21
 
 ## Status
 
@@ -8,29 +8,96 @@ Letzte Aktualisierung: 2026-10-20
 erkannt und einzeln als MJPEG-Stream im Browser angeboten. Mit zwei
 echten Kameras gleichzeitig geprüft.
 
+**Neu am 2026-10-21:**
+
+1. **Formular-Login statt HTTP-Basic.** Sobald ein Passwort gesetzt ist,
+   läuft die Anmeldung über `/anmelden` (Formular) und ein
+   Sitzungs-Cookie. Grund: der Browser des Anwenders hat HTTP-Basic
+   administrativ abgeschaltet, deshalb kam kein Anmeldedialog. Ein
+   gültiger Basic-Kopf wird weiterhin akzeptiert (curl). Sitzungsdauer
+   fest 12 h (`STANDARD_SITZUNGSDAUER` in `einstellungen.py`), bewusst
+   nicht konfigurierbar. Abmelden über `/abmelden`. Siehe Architektur
+   11.2.
+2. **Oberflächen-Dateien nach `resources/` verschoben.** Die HTML-,
+   CSS- und JS-Dateien liegen jetzt in `PIwebcam/resources/`. `server.py`
+   liest aus `.../resources`. `webcam_stream.yml` blieb neben dem
+   Programm (Projektregel: gleichnamige YAML beim Programm).
+3. **Git:** PIwebcam war versehentlich als Submodul-Gitlink (Modus
+   160000) eingecheckt und erschien auf GitHub als leerer Pfeil-Ordner.
+   Behoben: Gitlink entfernt, Dateien regulär aufgenommen, Commit
+   `8b0307b` gepusht. Der Baum-Eintrag ist jetzt `040000 tree`.
+4. **Umbau auf das neue `projektstruktur.md`-Schema.** Code-Module nach
+   `submodule/` (Paket, Import mit `submodule.`-Präfix), Doku nach
+   `DOKU/`, neues Startskript `webcam_stream.sh`. Ressourcenpfad in
+   `server.py` auf `parent.parent / "resources"` angepasst. Importkette
+   und Login-Fluss nach dem Umbau geprüft (py_compile, `--help` über das
+   Startskript, HTTP-Login-Test). `webcam_stream.py` und
+   `webcam_stream.yml` bleiben im Projektordner.
+
 ```bash
+# Start über das Skript (bevorzugt):
+/home/baer/gitrepos/raspirepo/PIwebcam/webcam_stream.sh
+# oder direkt:
 cd /home/baer/gitrepos/raspirepo/PIwebcam
 /home/baer/gitrepos/raspirepo/.venv/bin/python webcam_stream.py
 ```
 
 ## Dateien
 
+Struktur nach `projektstruktur.md` (neues Schema, am 2026-10-21
+umgestellt):
+
 | Datei | Inhalt |
 |---|---|
-| `webcam_stream.py` | Entrypoint: argparse (alle Defaults `None`!), `zugang_klaeren()`, `kameras_auflisten()`, Signale |
-| `einstellungen.py` | Nur Datenklassen: `Kameraeinstellung`, `Zeiten`, `Dienstkonfiguration` + Standardwerte |
-| `konfiguration.py` | YAML lesen/prüfen, CLI mischen, `kameras_automatisch()`, `bandbreite_pruefen()` |
-| `kamera.py` | `Kameraquelle`, `Kameraregister`, `kameras_erkennen()`, `stabile_pfade()`, Format- und Farbumwandlung |
-| `server.py` | `WebcamHandler` (Routing), `seiten_bauen()`, `Zugangsdaten` |
-| `webcam_stream.yml` | Konfiguration, kommentiert, mit Standardwerten |
-| `seite_uebersicht.html`, `seite_einzel.html`, `stil.css`, `webcam.js` | Oberfläche |
+| `webcam_stream.py` | Entrypoint (bleibt oben): argparse (alle Defaults `None`!), `zugang_klaeren()`, `kameras_auflisten()`, Signale. Importiert mit `submodule.`-Präfix |
+| `webcam_stream.yml` | Konfiguration, kommentiert (bleibt beim Programm) |
+| `webcam_stream.sh` | Startskript, ruft das Programm über das gemeinsame venv auf |
 | `requirements.txt` | linuxpy 0.25.0, numpy 2.3.4, Pillow 11.3.0, PyYAML 6.0.3 — alle installiert |
+| `submodule/__init__.py` | Paketmarker |
+| `submodule/einstellungen.py` | Nur Datenklassen: `Kameraeinstellung`, `Zeiten`, `Dienstkonfiguration` + Standardwerte |
+| `submodule/konfiguration.py` | YAML lesen/prüfen, CLI mischen, `kameras_automatisch()`, `bandbreite_pruefen()` |
+| `submodule/kamera.py` | `Kameraquelle`, `Kameraregister`, `kameras_erkennen()`, Format- und Farbumwandlung |
+| `submodule/server.py` | `WebcamHandler` (Routing), `seiten_bauen()`, `Zugangsdaten`, `Sitzungsverwaltung`, Formular-Login, `do_POST`, Cookie-Logik |
+| `resources/seite_uebersicht.html`, `resources/seite_einzel.html`, `resources/seite_anmelden.html`, `resources/stil.css`, `resources/webcam.js` | Oberfläche; `server.py` liest aus `../resources` |
+| `DOKU/PIwebcam.md`, `DOKU/PIwebcam_user.md`, `DOKU/PIwebcam_architektur.md` | Pflichtdokumentation |
 
-`einstellungen.py` existiert nur, um den Importzyklus
+`submodule/einstellungen.py` existiert nur, um den Importzyklus
 `konfiguration` → `kamera` → Datentypen aufzubrechen. Nicht
 zurückbauen.
 
-Flache Module, kein Paketverzeichnis.
+Die Code-Module liegen im Paket `submodule/` und werden durchgängig mit
+`submodule.`-Präfix importiert, auch untereinander. `webcam_stream.py`
+bleibt als Hauptprogramm im Projektordner; da es als Skript mit
+absolutem Pfad gestartet wird, liegt der Projektordner in `sys.path` und
+`import submodule.…` löst auf. Die frühere flache Modulstruktur wurde
+mit dem Umbau auf das neue `projektstruktur.md`-Schema aufgegeben.
+
+## Framework-frei: bewusste Ausnahme zu python.md
+
+`python.md` verlangt, dass jedes Hauptprogramm `base_resources` für
+Start, Konfiguration und Logging nutzt, und erlaubt eine framework-freie
+Umsetzung nur, wenn sie hier mit Begründung steht. Das ist der Fall:
+
+`webcam_stream.py` nutzt `base_resources` **nicht**. Es bringt eigenes
+Logging (`protokoll_einrichten`), eigene YAML- und CLI-Logik
+(`konfiguration.py`) und gibt die Auskunftsbefehle `--kameras-liste` und
+`--regler-liste` über `print` aus.
+
+Begründung:
+
+- **Rangfolge CLI > YAML > Standard.** Der Dienst braucht genau diese
+  dreistufige Mischung mit `None`-Defaults, damit erkennbar ist, ob der
+  Anwender etwas angegeben hat. `base_resources` bildet das nicht ab;
+  ein Nachbau darüber wäre Mehraufwand ohne Gewinn.
+- **Argparse mit vielen fachlichen Prüfungen** (Auflösung, Regler,
+  Formatwahl) gehört zum Kern des Programms, nicht in eine
+  Rahmenschicht.
+- **`print` statt Log ist hier gewollt:** `--kameras-liste` und
+  `--regler-liste` sind reine CLI-Berichte nach stdout, kein laufender
+  Betriebsausgang. Der Dienstbetrieb selbst läuft über das Log.
+
+Wird der Einstieg einmal überarbeitet, bleibt die Entscheidung
+framework-frei, solange diese Gründe gelten.
 
 ## Fehler, die gefunden und behoben wurden — nicht wieder einbauen
 
@@ -131,10 +198,12 @@ gesagt statt still der ungünstigere Fall angenommen.
     `zusammenarbeit.md` Regel 2 durch einen sicheren Standard, statt
     zu fragen.
 11. **Passwort nie in der YAML**, nur `WEBCAM_PASSWORT` oder
-    `--passwort`. Vorgabe aus `konfiguration.md`.
+    `--passwort`. Vorgabe aus `projekt-webcam.md`, Abschnitt „Sicherer
+    Standard beim Netzzugriff".
 12. **YAML statt TOML.** Erst mit `tomllib` gebaut, dann auf die
-    Projektvorgabe umgestellt (`.kiro/steering/konfiguration.md`).
-    Dateiname `webcam_stream.yml`, gleichnamig zum Programm.
+    Projektvorgabe umgestellt: `projektstruktur.md` verlangt eine
+    gleichnamige YAML-Konfigurationsdatei beim Programm (so auch
+    `python.md`). Dateiname `webcam_stream.yml`.
 13. **Alle argparse-Defaults sind `None`.** Sonst ist die Rangfolge
     CLI > Datei > Standard nicht umsetzbar. **Wichtig beim Erweitern.**
 14. **Seiten beim Start einmal bauen**, nicht pro Anfrage. Die
@@ -165,6 +234,11 @@ gesagt statt still der ungünstigere Fall angenommen.
   betrifft auch `webcam.js` (Pause, Vollbild, Reconnect, Status) und
   das Kachelraster der Übersicht mit mehreren Streams in einem Tab.
   **Größte offene Lücke.**
+- **Darstellung der Anmeldeseite im Browser.** Der Anmeldefluss ist über
+  HTTP geprüft (zehn Punkte, Stub-Register, Pi 5 — siehe Architektur
+  15), das gerenderte Formular selbst nicht. Der Anwender sollte einmal
+  bestätigen, dass Anmelden, Zugang und Abmelden im echten Browser
+  funktionieren.
 - TLS-Pfad (`--zertifikat`): kein Zertifikat erzeugt.
 - Mehr als zwei Kameras.
 - Vier gleichzeitige Streams flüssig (nur die Grenze ist geprüft).
@@ -199,7 +273,8 @@ NFS vermeiden. Diese Datei ist der Wiedereinstiegspunkt.
 
 Keiner zwingend. Naheliegende Anschlüsse, wenn gewünscht:
 
-1. Darstellung im Browser bestätigen (nur der Benutzer kann das).
+1. Darstellung im Browser bestätigen, inklusive Anmelden/Abmelden über
+   das neue Formular (nur der Benutzer kann das).
 2. USB-Hub mit Netzteil gegen den Ausfall der C615.
 3. Autostart als systemd-Unit (braucht `sudo`, also Freigabe).
 4. Aufzeichnung oder Zeitraffer — die Frames liegen im Grabber bereits

@@ -155,3 +155,51 @@ footer {
 }
 
 footer p { margin: 0.25rem 0; }
+
+/* --- Anmeldeformular --- */
+
+.huelle--schmal { width: min(100%, 24rem); }
+
+form.anmeldung {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+form.anmeldung label {
+  font-size: 0.9rem;
+  color: var(--text-leise);
+  margin-top: 0.5rem;
+}
+
+form.anmeldung input {
+  font: inherit;
+  color: var(--text);
+  background: var(--hintergrund);
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+}
+
+form.anmeldung input:focus-visible {
+  outline: 3px solid var(--akzent);
+  outline-offset: 2px;
+}
+
+form.anmeldung button {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+p.fehler {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--warnung);
+  border-radius: 6px;
+  color: var(--warnung);
+  font-size: 0.9rem;
+}

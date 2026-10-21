@@ -30,15 +30,24 @@ import sys
 import threading
 from pathlib import Path
 
-from einstellungen import (
+from submodule.einstellungen import (
     PROTOKOLLSTUFEN,
     STANDARD_BREITE,
     STANDARD_HOEHE,
     Dienstkonfiguration,
 )
-from kamera import FORMATWAHL, Kameraregister, kameras_erkennen, verfuegbare_regler
-from konfiguration import KONFIGURATIONSDATEI, Konfigurationsfehler, konfiguration_bauen
-from server import Zugangsdaten, server_bauen
+from submodule.kamera import (
+    FORMATWAHL,
+    Kameraregister,
+    kameras_erkennen,
+    verfuegbare_regler,
+)
+from submodule.konfiguration import (
+    KONFIGURATIONSDATEI,
+    Konfigurationsfehler,
+    konfiguration_bauen,
+)
+from submodule.server import Zugangsdaten, server_bauen
 
 log = logging.getLogger("webcam")
 

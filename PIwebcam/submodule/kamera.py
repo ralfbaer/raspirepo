@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from einstellungen import Kameraeinstellung, Zeiten
+from submodule.einstellungen import Kameraeinstellung, Zeiten
 
 log = logging.getLogger(__name__)
 

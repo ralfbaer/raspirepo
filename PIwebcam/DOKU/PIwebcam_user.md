@@ -15,6 +15,14 @@ außer denen, die Sie selbst über "Einzelbild speichern" herunterladen.
 
 ## Starten
 
+Am einfachsten über das Startskript:
+
+```bash
+/home/baer/gitrepos/raspirepo/PIwebcam/webcam_stream.sh
+```
+
+Gleichwertig der direkte Aufruf über das gemeinsame venv:
+
 ```bash
 cd /home/baer/gitrepos/raspirepo/PIwebcam
 /home/baer/gitrepos/raspirepo/.venv/bin/python webcam_stream.py
@@ -137,9 +145,17 @@ WEBCAM_PASSWORT=IhrPasswort /home/baer/gitrepos/raspirepo/.venv/bin/python webca
 ```
 
 Das Programm nennt dann die Adresse im Heimnetz, etwa
-`http://192.168.188.x:8080`. Der Browser fragt nach Benutzername und
-Passwort. Der Benutzername ist `webcam`, das Passwort das, das Sie
-gesetzt haben.
+`http://192.168.188.x:8080`. Statt irgendein Bild zu zeigen, erscheint
+zuerst eine Anmeldeseite. Tragen Sie dort Benutzername und Passwort ein:
+Der Benutzername ist `webcam`, das Passwort das, das Sie gesetzt haben.
+Nach der Anmeldung bleiben Sie angemeldet, bis Sie sich abmelden oder
+einige Stunden vergangen sind.
+
+Zum Abmelden rufen Sie `http://.../abmelden` auf.
+
+Diese Anmeldeseite ist ein gewöhnliches Formular. Sie funktioniert auch
+in Browsern, in denen das ältere Anmeldefenster (die kleine Abfrage
+ganz oben) abgeschaltet ist.
 
 Ohne Passwort verweigert das Programm die Freigabe ins Netz und sagt
 Ihnen das auch. Wenn Sie den Stream wirklich ungeschützt freigeben
@@ -155,6 +171,21 @@ Adresse erreicht, Ihr Kamerabild sehen.
 - Geben Sie den Dienst nicht aus dem Internet erreichbar frei, also
   keine Portweiterleitung im Router darauf richten. Dafür ist er nicht
   gebaut.
+
+### Sicherer: über einen SSH-Tunnel
+
+Wenn Sie sich mit SSH auf den Pi verbinden können, gibt es einen
+geschützten Weg ganz ohne Netzfreigabe und ohne Passwort im Dienst. Der
+Dienst bleibt in der Grundeinstellung (nur auf dem Pi selbst), und Sie
+bauen vom eigenen Rechner einen Tunnel:
+
+```bash
+ssh -L 8081:127.0.0.1:8080 benutzer@pi-adresse
+```
+
+Lassen Sie dieses Fenster offen und öffnen Sie dann im Browser
+`http://localhost:8081`. Die Verbindung läuft verschlüsselt durch SSH,
+und der Stream ist für niemanden sonst im Netz sichtbar.
 
 Das Passwort gehört **nicht** in `webcam_stream.yml`. Diese Datei ist
 für Einstellungen gedacht, nicht für Geheimnisse.

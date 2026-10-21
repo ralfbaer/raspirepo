@@ -1,6 +1,6 @@
 # webcam — Architektur und technische Details
 
-Stand: 2026-10-20
+Stand: 2026-10-21
 
 Zweck: Die Bilder einer oder mehrerer USB-Webcams als Live-Stream im
 Browser anzeigen.
@@ -37,25 +37,43 @@ von 15 auf 0,9 fps.
 
 ## 2. Komponenten
 
+Struktur nach dem `projektstruktur.md`-Schema (am 2026-10-21 umgestellt):
+Hauptprogramm, YAML und Startskript im Projektordner, die Code-Module im
+Paket `submodule/`, die Oberfläche in `resources/`, die Doku in `DOKU/`.
+
 | Datei | Aufgabe |
 |---|---|
-| `webcam_stream.py` | Entrypoint. Argumente, Protokoll, Zugangsregel, Auskunftsbefehle, Signale. |
-| `einstellungen.py` | Nur Datenklassen und Standardwerte. Keine Logik, keine Hardware. |
-| `konfiguration.py` | `webcam_stream.yml` lesen, prüfen, mit der Kommandozeile zusammenführen. |
-| `kamera.py` | V4L2-Zugriff, Grabber, Formatwahl, Erkennung, `Kameraregister`. |
-| `server.py` | HTTP-Adressen, MJPEG-Rahmenbildung, Anmeldung, optional TLS. |
-| `webcam_stream.yml` | Konfiguration mit Standardwerten, kommentiert. |
-| `seite_uebersicht.html`, `seite_einzel.html` | Vorlagen, beim Start einmal gefüllt. |
-| `stil.css`, `webcam.js` | Gestaltung und Bedienlogik der Seiten. |
+| `webcam_stream.py` | Entrypoint (Projektordner). Argumente, Protokoll, Zugangsregel, Auskunftsbefehle, Signale. |
+| `webcam_stream.yml` | Konfiguration mit Standardwerten, kommentiert (Projektordner). |
+| `webcam_stream.sh` | Startskript, ruft das Programm über das gemeinsame venv auf. |
+| `submodule/__init__.py` | Paketmarker. |
+| `submodule/einstellungen.py` | Nur Datenklassen und Standardwerte. Keine Logik, keine Hardware. |
+| `submodule/konfiguration.py` | `webcam_stream.yml` lesen, prüfen, mit der Kommandozeile zusammenführen. |
+| `submodule/kamera.py` | V4L2-Zugriff, Grabber, Formatwahl, Erkennung, `Kameraregister`. |
+| `submodule/server.py` | HTTP-Adressen, MJPEG-Rahmenbildung, Anmeldung (Formular + Sitzung), optional TLS. |
+| `resources/seite_uebersicht.html`, `resources/seite_einzel.html`, `resources/seite_anmelden.html` | Vorlagen, beim Start einmal gefüllt. |
+| `resources/stil.css`, `resources/webcam.js` | Gestaltung und Bedienlogik der Seiten. |
 | `requirements.txt` | Gepinnte Abhängigkeiten. |
 
-`einstellungen.py` existiert, um einen Importzyklus zu vermeiden:
-`konfiguration.py` braucht `kamera.py` für die Erkennung, und `kamera.py`
-braucht die Datentypen. Die Typen liegen deshalb in einem dritten Modul,
-das von keinem der beiden abhängt.
+`submodule/einstellungen.py` existiert, um einen Importzyklus zu
+vermeiden: `konfiguration.py` braucht `kamera.py` für die Erkennung, und
+`kamera.py` braucht die Datentypen. Die Typen liegen deshalb in einem
+dritten Modul, das von keinem der beiden abhängt.
 
-Flache Modulstruktur ohne Paketverzeichnis: Ein `webcam/webcam/`
-innerhalb des Projektverzeichnisses `webcam/` wäre verwirrend.
+Die Code-Module liegen im Paket `submodule/` und werden durchgängig mit
+`submodule.`-Präfix importiert, auch untereinander
+(`from submodule.kamera import …`). `webcam_stream.py` bleibt als
+Hauptprogramm im Projektordner; weil es als Skript mit absolutem Pfad
+gestartet wird, liegt der Projektordner in `sys.path`, und
+`import submodule.…` löst auf, ohne dass `sys.path` von Hand ergänzt
+werden muss. Die frühere flache Modulstruktur wurde mit dem Umbau auf
+das `projektstruktur.md`-Schema aufgegeben.
+
+Die statischen Dateien der Oberfläche (HTML-Vorlagen, CSS, JavaScript)
+liegen in `resources/`. `server.py` liegt in `submodule/` und liest sie
+beim Start aus `Path(__file__).resolve().parent.parent / "resources"`.
+Die gleichnamige Konfigurationsdatei `webcam_stream.yml` bleibt neben dem
+Programm, wie es die Projektstruktur verlangt.
 
 ## 3. Konfiguration
 
@@ -342,7 +360,7 @@ Heimnetz unkritisch, über Mobilfunk nicht.
 | `ffmpeg`/`mjpg_streamer` als Subprozess | Nicht installiert, Installation braucht `sudo`. |
 | OpenCV | Rund 90 MB installiert. Für YUYV→JPEG reichen numpy und Pillow. Unverhältnismäßig bei 1,8 GiB RAM. |
 | Hardware-Encoder des Pi (`bcm2835-codec`) | Erzeugt H.264, nicht JPEG, und bräuchte Container plus Player. Bei MJPEG-Kameras ohnehin gegenstandslos. |
-| TOML statt YAML für die Konfiguration | Erst so gebaut, dann auf die Projektvorgabe YAML umgestellt (`.kiro/steering/konfiguration.md`). |
+| TOML statt YAML für die Konfiguration | Erst so gebaut, dann auf die Projektvorgabe YAML umgestellt (`projektstruktur.md`: gleichnamige YAML beim Programm). |
 | Kameraliste über JavaScript aus `status.json` aufbauen | Die Liste ändert sich zur Laufzeit nicht. Serverseitig einmal bauen funktioniert auch ohne JavaScript. |
 
 ## 10. HTTP-Adressen
@@ -350,7 +368,10 @@ Heimnetz unkritisch, über Mobilfunk nicht.
 | Pfad | Antwort | Anmerkung |
 |---|---|---|
 | `GET /` | `text/html` | Übersicht aller Kameras |
-| `GET /stil.css` | `text/css` | `max-age=3600` |
+| `GET /anmelden` | `text/html` | Anmeldeformular |
+| `POST /anmelden` | 303 bzw. 401 | Anmeldung abschicken |
+| `GET /abmelden` | 303 | Sitzung beenden, Cookie löschen |
+| `GET /stil.css` | `text/css` | `max-age=3600`, ohne Anmeldung erreichbar |
 | `GET /webcam.js` | `text/javascript` | `max-age=3600` |
 | `GET /status.json` | `application/json` | Zustand aller Kameras |
 | `GET /kamera/<kennung>` | `text/html` | Einzelansicht |
@@ -385,14 +406,53 @@ Dateisystem. Ein Pfadwechsel über `..` ist damit ausgeschlossen.
 | im Netz erreichbar | keins | **Abbruch, Exit 2**, mit Anleitung |
 | im Netz erreichbar | `--ohne-anmeldung` | läuft, deutliche Warnung |
 
-Geprüft: `--host 0.0.0.0` ohne Passwort bricht ab. Mit Passwort
-antworten `/`, `/stil.css`, `/status.json`, Einzelansicht und
-Snapshot ohne Zugangsdaten mit 401, mit richtigen mit 200.
+Geprüft: `--host 0.0.0.0` ohne Passwort bricht ab. Mit Passwort wird ein
+nicht angemeldeter Seitenaufruf auf `/anmelden` umgeleitet (303),
+Unterressourcen (Stream, Snapshot, `status.json`) antworten mit 401. Mit
+gültiger Sitzung oder gültigem Basic-Kopf antworten alle Adressen mit
+200.
 
-### 11.2 Maßnahmen
+### 11.2 Anmeldeverfahren: Formular und Sitzung
 
-- HTTP Basic, Vergleich mit `secrets.compare_digest` statt `==`.
-- 0,5 s Verzögerung nach jeder Fehlanmeldung.
+Ist ein Passwort gesetzt, läuft der Zugang über ein Anmeldeformular und
+eine Sitzung per Cookie, **nicht** über HTTP-Basic. Grund: In verwalteten
+Browsern ist HTTP-Basic teils administrativ abgeschaltet; dann erscheint
+weder ein Anmeldefenster noch werden Zugangsdaten in der URL akzeptiert.
+Ein Formular umgeht das, weil es ein gewöhnlicher POST ist.
+
+Ablauf:
+
+- `GET /anmelden` liefert das Formular (Felder `benutzer`, `passwort`).
+- `POST /anmelden` prüft die Felder mit `secrets.compare_digest`. Bei
+  Erfolg wird ein zufälliges Token (`secrets.token_urlsafe(32)`) erzeugt,
+  in `Sitzungsverwaltung` abgelegt und als Cookie gesetzt
+  (`webcam_sitzung=...; Path=/; HttpOnly; SameSite=Strict`, bei TLS
+  zusätzlich `Secure`). Danach 303 auf `/`. Bei Fehlschlag:
+  `fehlanmeldung`-Verzögerung und das Formular erneut mit Hinweis (401).
+- Jede geschützte Anfrage prüft das Cookie gegen die
+  `Sitzungsverwaltung`.
+- `GET /abmelden` entfernt die Sitzung und löscht das Cookie
+  (`Max-Age=0`).
+
+`Sitzungsverwaltung` hält die Token mit Ablaufzeitpunkt (monotone Uhr)
+in einem `dict`, geschützt durch ein `threading.Lock`, weil der Server
+mehrere Anfragen parallel bedient. Die Ablage ist flüchtig: Nach einem
+Neustart des Dienstes müssen sich alle neu anmelden. Die Gültigkeitsdauer
+ist fest (`STANDARD_SITZUNGSDAUER`, 12 Stunden in `einstellungen.py`) und
+bewusst nicht konfigurierbar.
+
+Ein gültiger HTTP-Basic-Kopf wird weiterhin akzeptiert, damit Werkzeuge
+wie `curl` unverändert arbeiten. Das Formular ist der Weg für Browser,
+Basic der Weg für Skripte.
+
+CSS und JavaScript sind ohne Anmeldung erreichbar, damit das
+Anmeldeformular gestaltet ist; sie enthalten keine Kameradaten.
+
+### 11.3 Weitere Maßnahmen
+
+- Passwortvergleich durchgehend mit `secrets.compare_digest` statt `==`.
+- `fehlanmeldung`-Verzögerung (Standard 0,5 s) nach jedem falschen
+  Passwort, sowohl beim Formular als auch beim Basic-Rückfall.
 - Passwort ausschließlich über `WEBCAM_PASSWORT` oder `--passwort`,
   **nicht** über die Konfigurationsdatei. Die Datei ist zum Einchecken
   gedacht.
@@ -406,16 +466,20 @@ Snapshot ohne Zugangsdaten mit 401, mit richtigen mit 200.
 - Konfigurationswerte werden auf Typ und Bereich geprüft, bevor sie
   benutzt werden. Die Datei ist Eingabe von außen.
 
-### 11.3 Ausdrücklich nicht gelöst
+### 11.4 Ausdrücklich nicht gelöst
 
-- **HTTP Basic ohne TLS überträgt das Passwort nur base64-kodiert.** Im
-  LAN mitlesbar. Das Programm warnt beim Start.
-- Keine Sitzungsverwaltung, kein Abmelden, keine Benutzerverwaltung. Ein
-  Passwort für alle Kameras.
+- **Ohne TLS gehen Passwort und Sitzungs-Cookie im Klartext durchs
+  Netz.** Das Passwort steht im POST-Körper, das Cookie in jedem
+  Folgeaufruf; beides ist im LAN mitlesbar. Das Formular ist also eine
+  Bedienlösung für die Browser-Sperre, keine Sicherheitsverbesserung
+  gegenüber Basic. Das Programm warnt beim Start. Echten Schutz gibt erst
+  TLS oder ein SSH-Tunnel.
+- Nur ein Benutzer und ein Passwort für alle Kameras, keine
+  Benutzerverwaltung, keine Rechtetrennung zwischen Kameras.
+- Kein CSRF-Token am Anmeldeformular. `SameSite=Strict` am Cookie
+  begrenzt das Risiko; für einen Einbenutzer-Heimdienst vertretbar.
 - **Der TLS-Pfad ist ungetestet.** Es wurde kein Zertifikat erzeugt.
 - Kein Schutz gegen einen Angreifer, der bereits Zugriff auf den Pi hat.
-- Keine Rechtetrennung zwischen Kameras: Wer das Passwort hat, sieht
-  alle.
 
 ## 12. Geprüfte Umgebung
 
@@ -516,8 +580,9 @@ Alle vier liegen als fertige Wheels vor, es wird nichts kompiliert
 war wichtig: Ein Quellbau von numpy oder Pillow bei 1,8 GiB RAM wäre
 riskant.
 
-Alles Weitere aus der Standardbibliothek: `http.server`, `ssl`,
-`threading`, `argparse`, `json`, `secrets`, `base64`, `html`.
+Alles Weitere aus der Standardbibliothek: `http.server`, `http.cookies`,
+`ssl`, `threading`, `urllib.parse`, `argparse`, `json`, `secrets`,
+`base64`, `html`.
 
 ## 14. Messwerte
 
@@ -558,8 +623,16 @@ Geprüft:
   Strom aus einem Grabber.
 - Streamgrenze: Der fünfte Stream bei `max_streams: 4` erhält 503.
 - Kamera wird nach dem letzten Zuschauer freigegeben.
-- Anmeldung: 401 ohne und mit falschen Daten, 200 mit richtigen, auf
-  allen Adressen.
+- Formular-Anmeldung: über echte HTTP-Anfragen mit einem Stub-Register
+  (ohne Kamera) auf dem Entwicklungs-Host (Pi 5) geprüft — zehn Punkte:
+  Umleitung des nicht angemeldeten Seitenaufrufs auf `/anmelden`,
+  Formular und CSS öffentlich erreichbar, falsches Passwort → 401 mit
+  Hinweis, richtiges Passwort → 303 mit `Set-Cookie`
+  (`HttpOnly`, `SameSite=Strict`), Zugang mit Sitzungs-Cookie,
+  Abmelden löscht das Cookie und macht das Token ungültig, Basic-Kopf
+  bleibt für Werkzeuge gültig, `status.json` ohne Anmeldung → 401 ohne
+  Umleitung. Der Test lief gegen den laufenden Server, nicht gegen
+  Attrappen.
 - Sicherheitsabbruch bei Netzbindung ohne Passwort.
 - Fehlendes Gerät: 503 mit Begründung, Dienst läuft weiter.
 - **Wegfall einer Kamera im laufenden Betrieb** (USB-Ausfall der C615):
@@ -584,8 +657,11 @@ Geprüft:
   multipart-Format entspricht und gültige JPEGs enthält, nicht, dass
   Firefox oder Chrome es anzeigen. Das gilt auch für die Übersichtsseite
   mit mehreren gleichzeitigen Streams in einem Tab, für `webcam.js`
-  (Pause, Vollbild, Wiederverbinden, Statusanzeige) und für das
-  Kachelraster. **Das ist die größte offene Lücke.**
+  (Pause, Vollbild, Wiederverbinden, Statusanzeige), für das
+  Kachelraster und für die **Darstellung der Anmeldeseite** im Browser
+  (der Anmeldefluss selbst ist über HTTP geprüft, siehe Abschnitt 15,
+  nur das gerenderte Formular nicht). **Das ist die größte offene
+  Lücke.**
 - **TLS-Pfad** (`--zertifikat`). Kein Zertifikat erzeugt.
 - **Mehr als zwei Kameras.** Getestet wurden zwei.
 - **Vier gleichzeitige Streams über mehrere Kameras.** Die Grenze wurde
@@ -605,8 +681,10 @@ Geprüft:
 
 ## 17. Betrieb
 
-Kein Dienst, keine systemd-Unit, kein Autostart. Start von Hand, Ende
-mit `Strg+C` (`SIGINT` und `SIGTERM` werden behandelt,
+Kein Dienst, keine systemd-Unit, kein Autostart. Start von Hand über das
+Startskript `webcam_stream.sh` (ruft `webcam_stream.py` über das
+gemeinsame venv auf und reicht Argumente durch) oder direkt mit dem
+venv-Python. Ende mit `Strg+C` (`SIGINT` und `SIGTERM` werden behandelt,
 `server.shutdown()` läuft in einem eigenen Thread, weil es aus dem
 Signalkontext heraus blockieren würde).
 

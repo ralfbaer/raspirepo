@@ -43,6 +43,11 @@ STANDARD_ERSTES_BILD = 8.0
 STANDARD_STREAM_STILLE = 10.0
 STANDARD_FEHLANMELDUNG = 0.5
 
+# Wie lange eine über das Anmeldeformular erzeugte Sitzung gilt, in
+# Sekunden. Nach Ablauf ist eine neue Anmeldung nötig. Bewusst nicht in
+# der YAML konfigurierbar: ein fester, einfacher Wert genügt.
+STANDARD_SITZUNGSDAUER = 12 * 60 * 60
+
 # Richtwert für die nutzbare USB-2.0-Bandbreite in Byte/s. Grob und
 # absichtlich vorsichtig: Am Pi 4 hängen alle USB-Ports über einen
 # VL805-Controller an PCIe. Dient nur dazu, beim Start zu warnen.

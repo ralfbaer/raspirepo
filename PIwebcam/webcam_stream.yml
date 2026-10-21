@@ -44,6 +44,11 @@ protokoll: info
 anmeldung:
   # Benutzername für die Anmeldung im Browser. Das zugehörige Passwort
   # steht NICHT hier, sondern in der Umgebungsvariable WEBCAM_PASSWORT.
+  #
+  # Ist ein Passwort gesetzt, zeigt der Dienst eine Anmeldeseite
+  # (Formular) und hält die Anmeldung über ein Sitzungs-Cookie. Das
+  # funktioniert auch in Browsern, in denen das alte HTTP-Basic-Fenster
+  # abgeschaltet ist. Abmelden über die Adresse /abmelden.
   benutzer: webcam
 
   # Auf true setzen, um den Stream auch im Netz ohne Passwort
