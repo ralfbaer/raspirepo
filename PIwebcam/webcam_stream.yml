@@ -1,0 +1,175 @@
+# Konfiguration für webcam_stream.py
+#
+# Diese Datei ist gleichzeitig ihre eigene Dokumentation: Jeder
+# Parameter ist unten erläutert. Alle Werte sind freiwillig. Fehlt die
+# Datei oder ein Eintrag, gelten die eingebauten Standardwerte, und das
+# Programm startet trotzdem.
+#
+# Vorrang, von stark nach schwach:
+#   1. Kommandozeilenargumente   (etwa --port 9000)
+#   2. diese Datei
+#   3. eingebaute Standardwerte
+#
+# KEINE PASSWÖRTER in diese Datei. Das Passwort kommt aus der
+# Umgebungsvariable WEBCAM_PASSWORT:
+#   WEBCAM_PASSWORT=geheim python webcam_stream.py --host 0.0.0.0
+
+
+# =============================================================
+# Netz
+# =============================================================
+
+# Adresse, auf der der Webserver lauscht.
+#   127.0.0.1  nur dieser Rechner (sicherer Standard)
+#   0.0.0.0    im ganzen Netz erreichbar, braucht dann ein Passwort
+# Einheit: IP-Adresse oder Hostname.
+host: 127.0.0.1
+
+# Portnummer des Webservers. Erlaubt 1 bis 65535.
+# Werte unter 1024 brauchen root-Rechte, deshalb 8080 oder höher wählen.
+port: 8080
+
+# Überschrift der Webseite. Reiner Anzeigetext.
+titel: Webcam
+
+# Ausführlichkeit der Meldungen im Terminal.
+# Erlaubt: debug, info, warnung, fehler
+protokoll: info
+
+
+# =============================================================
+# Zugang
+# =============================================================
+
+anmeldung:
+  # Benutzername für die Anmeldung im Browser. Das zugehörige Passwort
+  # steht NICHT hier, sondern in der Umgebungsvariable WEBCAM_PASSWORT.
+  benutzer: webcam
+
+  # Auf true setzen, um den Stream auch im Netz ohne Passwort
+  # freizugeben. Dann kann jeder, der die Adresse erreicht, das
+  # Kamerabild sehen. Nur bewusst einschalten.
+  ohne_anmeldung: false
+
+  # Pfad zu einer PEM-Datei für HTTPS. Leer lassen für normales HTTP.
+  # Ohne TLS wird das Passwort nur base64-kodiert übertragen und ist im
+  # Netz mitlesbar.
+  zertifikat:
+
+  # Privater Schlüssel zum Zertifikat, falls er in einer eigenen Datei
+  # liegt. Leer lassen, wenn er in der Zertifikatsdatei enthalten ist.
+  schluessel:
+
+
+# =============================================================
+# Grenzen und Zeiten
+# =============================================================
+
+grenzen:
+  # Höchstzahl gleichzeitiger Streams über ALLE Kameras zusammen.
+  # Jeder Zuschauer belegt einen Platz. Begrenzt, weil CPU und
+  # USB-Bandbreite des Rechners geteilt werden. Einheit: Anzahl.
+  max_streams: 10
+
+  # Nachlaufzeit, bevor eine Kamera nach dem letzten Zuschauer wieder
+  # freigegeben wird. Verhindert, dass ein Seitenreload die Kamera neu
+  # starten muss. Einheit: Sekunden.
+  leerlauf: 5.0
+
+  # Wartezeit vor einem neuen Öffnungsversuch, wenn eine Kamera
+  # wegbricht (etwa USB-Stecker gezogen). Einheit: Sekunden.
+  wiederholung: 2.0
+
+  # Wie lange auf das erste Bild gewartet wird, bevor der Browser eine
+  # Fehlermeldung bekommt. Einheit: Sekunden.
+  erstes_bild: 8.0
+
+  # Wie lange ein laufender Stream ohne neues Bild offen bleibt, bevor
+  # er beendet wird. Einheit: Sekunden.
+  stream_stille: 10.0
+
+  # Verzögerung nach einer fehlgeschlagenen Anmeldung. Macht das
+  # Durchprobieren von Passwörtern langsam. Einheit: Sekunden.
+  fehlanmeldung: 0.5
+
+  # Richtwert für die nutzbare USB-Bandbreite. Wird nur benutzt, um beim
+  # Start zu warnen, wenn mehrere Kameras zusammen mehr fordern.
+  # Einheit: Byte pro Sekunde.
+  usb_richtwert: 24000000
+
+
+# =============================================================
+# Vorgaben für alle Kameras
+# =============================================================
+# Gelten für jede Kamera, die unten keinen eigenen Wert hat, und für
+# automatisch erkannte Kameras.
+
+vorgaben:
+  # Bildgröße als "BreitexHöhe". Die Breite muss gerade sein, weil das
+  # Kameraformat YUYV je zwei Pixel gemeinsam speichert.
+  # Die hier angeschlossene Kamera kann höchstens 640x480.
+  aufloesung: "640x480"
+
+  # Obergrenze der Bilder pro Sekunde. Mehr als etwa 16 gibt diese
+  # Kamera nicht her. 0 bedeutet: nicht drosseln. Einheit: Bilder/s.
+  fps: 15
+
+  # JPEG-Qualität von 1 (klein und grob) bis 100 (groß und fein).
+  # 75 ist ein guter Mittelwert, 60 spart deutlich Bandbreite.
+  # Wirkt nur bei Kameras, die der Rechner selbst umrechnen muss. Liefert
+  # die Kamera schon JPEG (siehe format), bestimmt sie die Qualität.
+  qualitaet: 75
+
+  # Bildformat, in dem die Kameras gelesen werden.
+  #   auto   MJPEG nehmen, wo die Kamera es kann, sonst YUYV (empfohlen)
+  #   mjpeg  MJPEG erzwingen; Kameras ohne MJPEG schlagen dann fehl
+  #   yuyv   immer Rohbilder holen und selbst umrechnen
+  # MJPEG ist fast immer besser: Die Kamera komprimiert selbst, das
+  # kostet keine Rechenzeit und ein Achtel der USB-Bandbreite. Nur so
+  # sind Auflösungen über 640x480 überhaupt möglich.
+  format: auto
+
+
+# =============================================================
+# Kameras
+# =============================================================
+# Ohne diesen Abschnitt werden alle angeschlossenen Kameras automatisch
+# erkannt und verwendet. Das ist der Normalfall.
+#
+# Der Abschnitt lohnt sich, wenn Kameras eigene Namen bekommen sollen
+# oder sich einzeln einstellen lassen müssen. Welche Geräte vorhanden
+# sind, zeigt:
+#     python webcam_stream.py --kameras-liste
+#
+# WICHTIG bei mehreren Kameras: Nicht /dev/video0 und /dev/video2
+# eintragen. Diese Nummern hängen von der Reihenfolge ab, in der die
+# Kameras erkannt werden, und können sich nach dem Neustarten oder
+# Umstecken vertauschen. Dann zeigt der Garten plötzlich die Werkstatt.
+# Stattdessen die Pfade unter /dev/v4l/by-id/ verwenden, die enthalten
+# Modell und Seriennummer. --kameras-liste gibt sie fertig aus.
+#
+# Felder je Kamera:
+#   geraet      Pflicht. Gerätepfad, am besten /dev/v4l/by-id/...
+#   name        Anzeigename in der Oberfläche. Standard "Kamera 1" usw.
+#   kennung     Name in der Web-Adresse. Wird sonst aus name gebildet.
+#   aufloesung  wie oben, gilt nur für diese Kamera
+#   fps         wie oben, gilt nur für diese Kamera
+#   qualitaet   wie oben, gilt nur für diese Kamera
+#   format      wie oben, gilt nur für diese Kamera
+#   regler      Bildeinstellungen der Kamera, Namen aus --regler-liste
+#
+# Beispiel mit zwei Kameras:
+#
+# kameras:
+#   - geraet: /dev/v4l/by-id/usb-Etron_Technology__Inc._USB2.0_Camera-video-index0
+#     name: Garten
+#     aufloesung: "640x480"
+#     fps: 15
+#     regler:
+#       brightness: 10
+#       contrast: 70
+#
+#   - geraet: /dev/v4l/by-id/usb-046d_HD_Webcam_C615_90CE6170-video-index0
+#     name: Werkstatt
+#     aufloesung: "800x600"
+#     fps: 12

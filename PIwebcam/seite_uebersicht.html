@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{TITEL}}</title>
+<link rel="stylesheet" href="/stil.css">
+</head>
+<body>
+<div class="huelle">
+
+  <header class="kopf">
+    <h1>{{TITEL}}</h1>
+    <p class="unterzeile">{{UNTERTITEL}}</p>
+  </header>
+
+  <main>
+    <div class="raster">
+{{KACHELN}}
+    </div>
+  </main>
+
+  <p id="meldung" role="status" aria-live="polite"></p>
+
+  <details>
+    <summary>Status</summary>
+    <div id="status">
+      <p class="unterzeile">Wird geladen &hellip;</p>
+    </div>
+  </details>
+
+  <footer>
+    <p>Bildquelle: USB-Webcams am Raspberry&nbsp;Pi. Rohformat YUYV,
+       Umwandlung nach JPEG auf dem Pi.</p>
+  </footer>
+
+</div>
+
+<script src="/webcam.js"></script>
+<script>
+  // Auf der Übersicht laufen alle Streams gleichzeitig. Jede Kachel
+  // bekommt eine eigene Fehlerbehandlung, damit eine ausgefallene
+  // Kamera die anderen nicht mitnimmt.
+  webcamStart({ bilder: document.querySelectorAll(".kachel img") });
+</script>
+</body>
+</html>

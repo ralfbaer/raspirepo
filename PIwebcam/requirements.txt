@@ -1,0 +1,20 @@
+# Abhängigkeiten für webcam. Versionen gepinnt.
+# Installation in das gemeinsame venv:
+#   /home/baer/gitrepos/raspirepo/.venv/bin/pip install -r requirements.txt
+#
+# Alle vier liegen als fertige aarch64-Wheels vor, es wird nichts
+# kompiliert (geprüft am 20.10.2026 mit pip download --no-deps bzw.
+# pip install --dry-run).
+
+# V4L2-Zugriff auf die Kameras. Reines Python über ctypes, kein Build.
+linuxpy==0.25.0
+
+# YUYV -> YCbCr-Umwandlung der Rohframes.
+numpy==2.3.4
+
+# JPEG-Kodierung der Frames.
+Pillow==11.3.0
+
+# Lesen der Konfigurationsdatei webcam_stream.yml.
+# Gelesen wird ausschließlich mit yaml.safe_load.
+PyYAML==6.0.3

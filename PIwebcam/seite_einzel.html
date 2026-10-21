@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{NAME}} &ndash; {{TITEL}}</title>
+<link rel="stylesheet" href="/stil.css">
+</head>
+<body>
+<div class="huelle">
+
+  <header class="kopf">
+    <h1>{{NAME}}</h1>
+    <p class="unterzeile">{{AUFLOESUNG}} &middot; {{GERAET}} &middot;
+       <a href="/">zur Übersicht</a></p>
+  </header>
+
+  <main>
+    <div class="bildrahmen">
+      <img id="bild" src="/kamera/{{KENNUNG}}/stream.mjpg"
+           alt="Live-Bild von {{NAME}}" data-kennung="{{KENNUNG}}">
+    </div>
+  </main>
+
+  <div class="leiste">
+    <button type="button" id="pause" aria-pressed="false">Pause</button>
+    <button type="button" id="vollbild">Vollbild</button>
+    <a class="knopf" href="/kamera/{{KENNUNG}}/snapshot.jpg"
+       download="{{KENNUNG}}.jpg">Einzelbild speichern</a>
+  </div>
+
+  <p id="meldung" role="status" aria-live="polite"></p>
+
+  <details>
+    <summary>Status</summary>
+    <div id="status">
+      <p class="unterzeile">Wird geladen &hellip;</p>
+    </div>
+  </details>
+
+  <footer>
+    <p>Rohformat YUYV, Umwandlung nach JPEG auf dem Pi.</p>
+  </footer>
+
+</div>
+
+<script src="/webcam.js"></script>
+<script>
+  webcamStart({
+    bilder: [document.getElementById("bild")],
+    kennung: "{{KENNUNG}}",
+    pause: document.getElementById("pause"),
+    vollbild: document.getElementById("vollbild")
+  });
+</script>
+</body>
+</html>

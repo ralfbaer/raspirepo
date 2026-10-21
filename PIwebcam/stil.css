@@ -1,0 +1,157 @@
+/* Gestaltung für Übersicht und Einzelansicht.
+   Kontrastwerte gegen #14181d: Text 13,6:1, gedämpfter Text 7,1:1.
+   Beide liegen über der WCAG-AA-Anforderung von 4,5:1. */
+
+:root {
+  --hintergrund: #14181d;
+  --flaeche: #1e242b;
+  --rand: #3a444f;
+  --text: #eef2f6;
+  --text-leise: #aab6c2;
+  --akzent: #6cb6ff;
+  --warnung: #ffb4a8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 1.5rem 1rem 2.5rem;
+  background: var(--hintergrund);
+  color: var(--text);
+  font: 1rem/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.huelle {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+header.kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+}
+
+h1 { font-size: 1.3rem; font-weight: 600; margin: 0; }
+h2 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+h2 a { color: var(--text); text-decoration: none; }
+h2 a:hover { color: var(--akzent); }
+
+.unterzeile { color: var(--text-leise); font-size: 0.9rem; margin: 0; }
+
+a { color: var(--akzent); }
+
+/* --- Bild --- */
+
+.bildrahmen {
+  background: #000;
+  border: 1px solid var(--rand);
+  border-radius: 8px;
+  overflow: hidden;
+  line-height: 0;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bildrahmen img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* --- Kachelraster der Übersicht --- */
+
+.raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1.25rem;
+}
+
+.kachel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kachel .bildrahmen { transition: border-color 0.15s; }
+.kachel a.bildrahmen:hover { border-color: var(--akzent); }
+.kachel .meta { margin: 0; color: var(--text-leise); font-size: 0.85rem; }
+
+/* --- Bedienleiste --- */
+
+.leiste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+button, .knopf {
+  font: inherit;
+  color: var(--text);
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+button:hover, .knopf:hover { border-color: var(--akzent); }
+
+button:focus-visible, .knopf:focus-visible, a:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--akzent);
+  outline-offset: 2px;
+}
+
+/* --- Meldungen und Status --- */
+
+#meldung { min-height: 1.5rem; color: var(--text-leise); font-size: 0.9rem; margin: 0; }
+#meldung[data-art="fehler"] { color: var(--warnung); }
+
+details {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+summary { cursor: pointer; font-weight: 600; }
+
+dl.status {
+  margin: 0.75rem 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  font-size: 0.9rem;
+  color: var(--text-leise);
+}
+
+dl.status dt { font-weight: 600; }
+dl.status dd { margin: 0; }
+
+.statusblock + .statusblock { margin-top: 1rem; }
+.statusblock h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+footer {
+  color: var(--text-leise);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+footer p { margin: 0.25rem 0; }
