@@ -691,3 +691,134 @@ Signalkontext heraus blockieren würde).
 Eine systemd-Unit würde `sudo` brauchen und ist nicht angefordert.
 Solange nichts anderes gesagt ist, bleibt der Aufruf bei Bedarf die
 richtige Form: Im Ruhezustand sollen die Kameras nicht laufen.
+
+## 17. Display-Ausgabe (webcam_display.py)
+
+Eigenständiges zweites Hauptprogramm. Zeigt den Kamerastream auf dem am
+Pi angeschlossenen Display, ohne Browser und ohne X/Wayland.
+
+```
+webcam_stream.py ──MJPEG über HTTP──► mjpeg_leser.Mjpegquelle
+(einziger Besitzer    127.0.0.1:8080   │  JPEG-Teile
+ der Kamera)                           ▼
+                            rahmenpuffer.Rahmenpuffer
+                            JPEG→Pillow→numpy→RGB565
+                                       │
+                                       ▼
+                                   /dev/fb0  (Panel)
+```
+
+### 17.1 Warum über den Dienst, nicht direkt auf die Kamera
+
+Dieselbe Hardware-Begründung wie beim Mehrkamerabetrieb (Abschnitt 4.4):
+Ein V4L2-Gerät verträgt nur einen Zugriff, zwei drücken die Bildrate von
+15 auf 0,9 fps. Der Dienst ist der eine Besitzer der Kamera; der Anzeiger
+ist ein gewöhnlicher Stream-Zuschauer und belegt einen
+`max_streams`-Platz. Nebeneffekt: Browser und Display laufen gleichzeitig
+aus demselben Grabber. Der Anzeiger importiert deshalb **nicht**
+`kamera.py` und zieht `linuxpy` nicht in seinen Prozess; er braucht nur
+`numpy`, `Pillow` und die Standardbibliothek.
+
+### 17.2 Komponenten
+
+| Datei | Aufgabe |
+|---|---|
+| `webcam_display.py` | Entrypoint (Projektordner). argparse (Defaults `None`), eigene kleine YAML/CLI-Mischung, Signale, Hauptschleife. Framework-frei wie `webcam_stream.py`. |
+| `webcam_display.yml` | Konfiguration: `server`, `kamera`, `benutzer`, `rahmenpuffer`, `skalierung`, `protokoll`. |
+| `webcam_display.sh` | Startskript über das gemeinsame venv. Startet bei Bedarf `webcam_stream.py` mit (pgrep-Prüfung, Warten auf Port 8080) und stoppt einen selbst gestarteten Dienst beim Verlassen wieder (trap); einen schon laufenden lässt es unberührt. |
+| `submodule/mjpeg_leser.py` | `Mjpegquelle`: MJPEG-HTTP-Strom lesen, Grenzmarke aus dem Header, Reconnect mit Backoff. |
+| `submodule/rahmenpuffer.py` | `Rahmenpuffer`: `/dev/fb0` per ioctl/mmap, JPEG dekodieren, skalieren, Pixel packen und schreiben. |
+
+### 17.3 Framebuffer-Zugriff
+
+Geometrie und Pixelformat werden per ioctl aus dem Treiber gelesen, nicht
+geraten:
+
+- `FBIOGET_VSCREENINFO` (`struct fb_var_screeninfo`): `xres`, `yres`,
+  `bits_per_pixel` und vor allem die `fb_bitfield` für `red`, `green`,
+  `blue` (je `offset` und `length`). Daraus ergibt sich die Packung für
+  jedes gemeldete Format.
+- `FBIOGET_FSCREENINFO` (`struct fb_fix_screeninfo`): `line_length`
+  (stride in Byte) und `smem_len` (Länge der Speicherabbildung).
+
+Die Strukturen sind als `ctypes.Structure` nachgebildet. `smem_start` und
+`mmio_start` sind `unsigned long`, auf dem 64-Bit-Kernel (arm_64bit=1)
+also 8 Byte; ctypes richtet nach denselben Regeln aus wie der
+Kernel-Compiler, feste Offsets sind nicht nötig.
+
+Die Packung je Farbe: `(wert >> (8 - length)) << offset`, bitweise
+verodert. Das ergibt für das gemessene Panel RGB565
+(rot off 11 / len 5, grün off 5 / len 6, blau off 0 / len 5) und würde
+für XRGB8888 (off 16/8/0, je len 8) genauso stimmen. Das Pixelwort wird
+als `uint16` bzw. `uint32` (little-endian) zeilenweise in den sichtbaren
+Bereich (`stride * yres`) geschrieben; bei `stride > breite*bpp/8` an den
+jeweiligen Zeilenversatz.
+
+Gemessen am 2026-10-21 (raspberrypi4b): `/dev/fb0` ist `vc4drmfb`,
+**800×480, 16 bpp, stride 1600**. `baer` ist in Gruppe `video` (gid 44),
+`/dev/fb0` ist Modus 660 root:video → kein `sudo`.
+
+Ein-Puffer-Ausgabe ohne VSync: möglicher Tearing-Streifen, dafür keine
+Panning-Umschaltlogik. Der Textcursor der Konsole (`tty1`) wird mit
+bestem Bemühen über eine Escape-Sequenz auf `/dev/tty1` ausgeblendet und
+beim Beenden zurückgeholt; scheitert das (Gerät gehört Gruppe `tty`), ist
+es unkritisch, weil der Vollbild-Frame den Cursor ohnehin überdeckt.
+
+### 17.4 MJPEG-Zerlegung
+
+Gegenstück zu Abschnitt 9/10. Die Antwort auf
+`GET /kamera/<kennung>/stream.mjpg` (oder `/stream.mjpg` für die erste
+Kamera) ist `multipart/x-mixed-replace`. Die Grenzmarke wird aus dem
+`Content-Type` gelesen (nicht verdrahtet, auch wenn der Server sie fest
+auf `webcamframe` setzt). Je Teil: Kopfzeilen bis zur Leerzeile,
+`Content-Length` bestimmt die Byteanzahl des folgenden JPEG. Gelesen wird
+mit `http.client`; `HTTPResponse.readline()` und `read(n)` genügen.
+
+Reicht die Antwort nicht `200` oder fehlt die multipart-Kennung, wird das
+als `MjpegFehler` gemeldet (häufigster Fall: Dienst läuft nicht, oder
+falsche Kennung → der Dienst antwortet `404`). Bei Verbindungsabbruch
+wird mit wachsendem Abstand (1 s, verdoppelt bis max. 30 s) neu
+verbunden.
+
+Nur HTTP. TLS ist nicht vorgesehen: Der Dienst läuft lokal auf
+`127.0.0.1`. Verlangt der Dienst ausnahmsweise ein Passwort, schickt der
+Anzeiger einen HTTP-Basic-Kopf (der Dienst akzeptiert Basic für
+Werkzeuge, siehe 11.2); das Passwort kommt aus `WEBCAM_PASSWORT` oder
+`--passwort`, nie aus der YAML.
+
+### 17.5 Skalierung
+
+`einpassen` (Standard): Seitenverhältnis bleibt, Faktor
+`min(breite/iw, hoehe/ih)`, Rest schwarzer Rand (640×480 mittig in
+800×480, je 80 px seitlich). `fuellen`: Faktor `max(...)`, der Überstand
+wird mittig abgeschnitten. Die Platzierung schneidet Ziel- und
+Quellbereich gemeinsam zu, deckt also kleineres (zentriert mit Rand) wie
+größeres Bild (beschnitten) mit demselben Code ab.
+
+### 17.6 Lebenszyklus
+
+Vordergrundprozess. `SIGINT` (Strg+C) und `SIGTERM` führen über eine
+`KeyboardInterrupt` in den `finally`-Zweig: Framebuffer leeren, Cursor
+zurückholen, mmap und Gerät schließen. Defekte Einzelframes werden
+übersprungen (Debug-Hinweis), nicht als Absturz.
+
+### 17.7 Verifikation
+
+Geprüft am 2026-10-21 (raspberrypi4b):
+
+- Framebuffer-Selbsttest: Testbild über `zeichnen_jpeg` geschrieben,
+  Geometrie 800×480/16 bpp/stride 1600 korrekt per ioctl gelesen, kein
+  Fehler, Löschen beim Schließen.
+- End-to-End: `webcam_stream.py` (eine Kamera `usb2-0-camera`,
+  127.0.0.1:8080, ohne Passwort) plus `webcam_display.py`; Log
+  „Verbunden …" und „Erstes Bild angezeigt", ~10 s stabil, beide
+  Prozesse sauber beendet (`pgrep` leer).
+- `py_compile` aller drei neuen Dateien, `--help` über das venv.
+
+### 17.8 Ausdrücklich ungeprüft
+
+- Wiedergabe auf einem 32-bpp-Panel (nur die Bitlage-Logik ist dafür
+  ausgelegt; kein solches Panel vorhanden).
+- Konsolen-Blanking über lange Standzeit (DPMS/`consoleblank`).
+- `fuellen` mit einer Kamera im Hochformat.
+- Dauerbetrieb über Stunden (wie beim Dienst, Abschnitt 16).

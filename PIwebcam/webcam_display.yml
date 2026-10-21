@@ -1,0 +1,46 @@
+# Konfiguration für webcam_display.py
+#
+# webcam_display.py zeigt den Kamerastream des laufenden
+# webcam_stream.py auf dem am Pi angeschlossenen Display (/dev/fb0).
+#
+# Diese Datei ist gleichzeitig ihre eigene Dokumentation. Alle Werte
+# sind freiwillig; fehlt die Datei oder ein Eintrag, gelten die
+# eingebauten Standardwerte.
+#
+# Vorrang, von stark nach schwach:
+#   1. Kommandozeilenargumente   (etwa --skalierung fuellen)
+#   2. diese Datei
+#   3. eingebaute Standardwerte
+#
+# WICHTIG: webcam_stream.py muss laufen und mindestens eine Kamera
+# liefern. Dieses Programm öffnet die Kamera NICHT selbst, sondern
+# bezieht die Bilder vom Dienst (ein V4L2-Gerät verträgt nur einen
+# Zugriff).
+
+
+# Adresse des laufenden Dienstes. In der Grundeinstellung lauscht
+# webcam_stream.py nur auf 127.0.0.1 — genau richtig, weil dieses
+# Programm auf demselben Pi läuft. Nur http, kein https.
+server: http://127.0.0.1:8080
+
+# Kennung der anzuzeigenden Kamera. Leer lassen für die erste Kamera.
+# Die Kennungen stehen auf der Übersichtsseite des Dienstes bzw. in
+# dessen Startmeldung (hinter "-> /kamera/<kennung>").
+kamera:
+
+# Benutzername, falls der Dienst ein Passwort verlangt (nur bei
+# Netzfreigabe nötig; lokal üblicherweise nicht). Das Passwort gehört
+# NICHT hierher, sondern in die Umgebungsvariable WEBCAM_PASSWORT.
+benutzer: webcam
+
+# Framebuffer-Gerät des Displays.
+rahmenpuffer: /dev/fb0
+
+# Wie das Bild auf das Panel gelegt wird:
+#   einpassen  Seitenverhältnis behalten, Ränder zulassen (Letterbox)
+#   fuellen    Fläche ganz füllen, Überstand mittig abschneiden
+skalierung: einpassen
+
+# Ausführlichkeit der Meldungen im Terminal.
+# Erlaubt: debug, info, warnung, fehler
+protokoll: info

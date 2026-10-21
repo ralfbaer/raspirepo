@@ -8,6 +8,10 @@ Letzte Aktualisierung: 2026-10-21
 erkannt und einzeln als MJPEG-Stream im Browser angeboten. Mit zwei
 echten Kameras gleichzeitig geprüft.
 
+**Zusätzlich: Ausgabe auf dem lokalen Display** über das eigenständige
+Programm `webcam_display.py` (Framebuffer `/dev/fb0`, ohne Browser und
+ohne X/Wayland). End-to-End am Gerät geprüft.
+
 **Neu am 2026-10-21:**
 
 1. **Formular-Login statt HTTP-Basic.** Sobald ein Passwort gesetzt ist,
@@ -33,6 +37,12 @@ echten Kameras gleichzeitig geprüft.
    und Login-Fluss nach dem Umbau geprüft (py_compile, `--help` über das
    Startskript, HTTP-Login-Test). `webcam_stream.py` und
    `webcam_stream.yml` bleiben im Projektordner.
+5. **Display-Ausgabe (`webcam_display.py`).** Neues, eigenständiges
+   Hauptprogramm zeigt den Stream auf dem am Pi angeschlossenen Display
+   (`/dev/fb0`) ohne Browser und ohne grafische Oberfläche. Es öffnet
+   die Kamera **nicht** selbst, sondern bezieht die fertigen JPEG-Frames
+   vom laufenden `webcam_stream.py` (Grundsatz „nur ein Prozess je
+   Kamera"). Eigener Abschnitt „Display-Ausgabe" weiter unten.
 
 ```bash
 # Start über das Skript (bevorzugt):
@@ -52,12 +62,17 @@ umgestellt):
 | `webcam_stream.py` | Entrypoint (bleibt oben): argparse (alle Defaults `None`!), `zugang_klaeren()`, `kameras_auflisten()`, Signale. Importiert mit `submodule.`-Präfix |
 | `webcam_stream.yml` | Konfiguration, kommentiert (bleibt beim Programm) |
 | `webcam_stream.sh` | Startskript, ruft das Programm über das gemeinsame venv auf |
+| `webcam_display.py` | Entrypoint des Display-Anzeigers (framework-frei, eigene kleine Konfig). Holt MJPEG vom Dienst, schreibt in den Framebuffer |
+| `webcam_display.yml` | Konfiguration des Anzeigers: `server`, `kamera`, `benutzer`, `rahmenpuffer`, `skalierung`, `protokoll` |
+| `webcam_display.sh` | Startskript des Anzeigers über das gemeinsame venv |
 | `requirements.txt` | linuxpy 0.25.0, numpy 2.3.4, Pillow 11.3.0, PyYAML 6.0.3 — alle installiert |
 | `submodule/__init__.py` | Paketmarker |
 | `submodule/einstellungen.py` | Nur Datenklassen: `Kameraeinstellung`, `Zeiten`, `Dienstkonfiguration` + Standardwerte |
 | `submodule/konfiguration.py` | YAML lesen/prüfen, CLI mischen, `kameras_automatisch()`, `bandbreite_pruefen()` |
 | `submodule/kamera.py` | `Kameraquelle`, `Kameraregister`, `kameras_erkennen()`, Format- und Farbumwandlung |
 | `submodule/server.py` | `WebcamHandler` (Routing), `seiten_bauen()`, `Zugangsdaten`, `Sitzungsverwaltung`, Formular-Login, `do_POST`, Cookie-Logik |
+| `submodule/rahmenpuffer.py` | `Rahmenpuffer`: `/dev/fb0` per ioctl/mmap, JPEG→Panel, Pixelpackung RGB565/XRGB8888 aus der Treiber-Bitlage. Von `webcam_display.py` genutzt |
+| `submodule/mjpeg_leser.py` | `Mjpegquelle`: liest den MJPEG-HTTP-Strom des Dienstes, Grenzmarke aus dem Header, Reconnect mit Backoff |
 | `resources/seite_uebersicht.html`, `resources/seite_einzel.html`, `resources/seite_anmelden.html`, `resources/stil.css`, `resources/webcam.js` | Oberfläche; `server.py` liest aus `../resources` |
 | `DOKU/PIwebcam.md`, `DOKU/PIwebcam_user.md`, `DOKU/PIwebcam_architektur.md` | Pflichtdokumentation |
 
@@ -98,6 +113,80 @@ Begründung:
 
 Wird der Einstieg einmal überarbeitet, bleibt die Entscheidung
 framework-frei, solange diese Gründe gelten.
+
+`webcam_display.py` nutzt `base_resources` **ebenfalls nicht**, aus
+denselben Gründen und bewusst konsistent zum Geschwisterprogramm: eigene
+`None`-Default-argparse-Argumente, eine kleine eigene YAML/CLI-Mischung
+(wenige Schlüssel, Rangfolge CLI > Datei > Standard) und
+`protokoll_einrichten` statt `base_resources`-Logging. Es importiert
+bewusst **nicht** `submodule.konfiguration` oder `submodule.kamera`,
+damit `linuxpy` nicht in den Anzeige-Prozess gezogen wird; der braucht
+nur `numpy`, `Pillow` und die Standardbibliothek.
+
+## Display-Ausgabe (webcam_display.py)
+
+Zweck: Das Kamerabild ohne Browser und ohne X/Wayland auf dem am Pi
+angeschlossenen Display zeigen.
+
+**Datenfluss:** `webcam_stream.py` (einziger Besitzer der Kamera) →
+MJPEG über HTTP auf `127.0.0.1:8080` → `mjpeg_leser.Mjpegquelle` liest
+die JPEG-Teile → `rahmenpuffer.Rahmenpuffer` dekodiert (Pillow),
+skaliert (numpy) und schreibt nach `/dev/fb0`.
+
+**Warum über den Dienst und nicht direkt auf die Kamera:** Ein
+V4L2-Gerät verträgt nur einen Zugriff (15 → 0,9 fps bei zwei). Der
+Anzeiger ist deshalb ein gewöhnlicher Stream-Zuschauer und belegt einen
+`max_streams`-Platz. Vorteil nebenbei: Browser und Display laufen
+gleichzeitig aus demselben Grabber.
+
+**Framebuffer, am Gerät gemessen (2026-10-21, raspberrypi4b):**
+`/dev/fb0` ist `vc4drmfb`, **800×480, 16 bpp (RGB565), stride 1600**. Die
+Lage der Farbbits wird per `FBIOGET_VSCREENINFO` aus dem Treiber gelesen
+(`red/green/blue` Offset und Länge), nicht geraten; damit stimmt die
+Pixelpackung auch für ein 32-bpp-Panel (XRGB8888). Geometrie und
+`stride` kommen aus `FBIOGET_FSCREENINFO`. `baer` ist in Gruppe `video`
+(gid 44) → `/dev/fb0` ohne `sudo` nutzbar.
+
+**Skalierung:** `einpassen` (Standard) behält das Seitenverhältnis mit
+schwarzem Rand (640×480 mittig in 800×480, je 80 px seitlich), `fuellen`
+füllt die Fläche und schneidet mittig ab.
+
+**Entscheidungen:**
+
+- Keine neue Abhängigkeit: nur `numpy`, `Pillow`, Standardbibliothek
+  (`http.client`, `mmap`, `ctypes`, `fcntl`). Entspricht der Projektregel
+  „keine schweren Abhängigkeiten".
+- Ein-Puffer-Ausgabe, kein VSync: möglicher Tearing-Streifen bei
+  schneller Bewegung, dafür keine Umschaltlogik. Für ein Kamerabild
+  vertretbar.
+- Grenzmarke des multipart-Stroms aus dem `Content-Type` gelesen, nicht
+  verdrahtet (`GRENZE = "webcamframe"` in `server.py`).
+- Nur HTTP, kein TLS: Der Dienst läuft lokal auf `127.0.0.1`.
+- Reconnect mit wachsendem Abstand (1 s → max. 30 s), wenn der Dienst
+  (noch) nicht läuft oder neu startet.
+- Textcursor der Konsole wird mit bestem Bemühen ausgeblendet; scheitert
+  das Schreiben auf `/dev/tty1` (Gruppe `tty`), ist es unkritisch, weil
+  der Vollbild-Frame den Cursor ohnehin überdeckt. Nur Debug-Hinweis.
+- `webcam_display.sh` startet bei Bedarf `webcam_stream.py` mit: `pgrep`
+  prüft, ob schon einer läuft; wenn nicht, wird er im Hintergrund
+  gestartet, per `{ exec 3<>/dev/tcp/127.0.0.1/8080; } 2>/dev/null`
+  (stderr-Umleitung als Gruppe, sonst leckt die bash-Fehlermeldung) auf
+  den Port gewartet und beim Verlassen via `trap` wieder gestoppt. Einen
+  **schon laufenden** Dienst benutzt das Skript mit und lässt ihn beim
+  Beenden unberührt. Beide Zweige am Gerät geprüft (2026-10-21).
+
+**Geprüft am Gerät (2026-10-21, raspberrypi4b):**
+
+- Framebuffer-Selbsttest: Testbild über `zeichnen_jpeg` geschrieben,
+  Geometrie 800×480/16 bpp/stride 1600 korrekt gelesen, kein Fehler.
+- End-to-End: `webcam_stream.py` gestartet (eine Kamera, `usb2-0-camera`,
+  127.0.0.1:8080, ohne Passwort), `webcam_display.py` verband sich auf
+  `/stream.mjpg`, Log „Erstes Bild angezeigt", Stream lief ~10 s stabil,
+  beide Prozesse sauber beendet (`pgrep` leer).
+
+**Ungeprüft:** Wiedergabe eines 32-bpp-Panels (nur die Bitlage-Logik ist
+dafür ausgelegt, kein solches Panel vorhanden); Konsolen-Blanking über
+lange Standzeit; `fuellen` mit einer Kamera im Hochformat.
 
 ## Fehler, die gefunden und behoben wurden — nicht wieder einbauen
 
@@ -276,6 +365,10 @@ Keiner zwingend. Naheliegende Anschlüsse, wenn gewünscht:
 1. Darstellung im Browser bestätigen, inklusive Anmelden/Abmelden über
    das neue Formular (nur der Benutzer kann das).
 2. USB-Hub mit Netzteil gegen den Ausfall der C615.
-3. Autostart als systemd-Unit (braucht `sudo`, also Freigabe).
+3. Autostart als systemd-Unit (braucht `sudo`, also Freigabe) — sowohl
+   für `webcam_stream.py` als auch für `webcam_display.py` (letzteres mit
+   `After=`/`Requires=` auf den Dienst).
 4. Aufzeichnung oder Zeitraffer — die Frames liegen im Grabber bereits
    als JPEG vor.
+5. Display: Tearing (Doppelpufferung über Panning) und ein möglicher
+   Umschalter zwischen mehreren Kameras, falls im Betrieb gewünscht.

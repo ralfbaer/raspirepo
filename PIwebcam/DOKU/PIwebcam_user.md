@@ -190,6 +190,52 @@ und der Stream ist für niemanden sonst im Netz sichtbar.
 Das Passwort gehört **nicht** in `webcam_stream.yml`. Diese Datei ist
 für Einstellungen gedacht, nicht für Geheimnisse.
 
+## Das Bild auf einem Display am Pi zeigen
+
+Hängt am Pi ein Bildschirm (zum Beispiel ein kleines HDMI-Panel), lässt
+sich das Kamerabild direkt dort anzeigen, ganz ohne Browser. Dafür gibt
+es ein zweites Programm, `webcam_display.py`.
+
+Ein Befehl genügt:
+
+```bash
+/home/baer/gitrepos/raspirepo/PIwebcam/webcam_display.sh
+```
+
+Auf dem angeschlossenen Bildschirm erscheint das Kamerabild. Beenden mit
+`Strg+C`; der Bildschirm wird dabei wieder geleert.
+
+Das Startskript kümmert sich selbst um den Kameradienst: Läuft er noch
+nicht, startet es ihn mit und beendet ihn beim Verlassen wieder. Läuft
+bereits ein Dienst (etwa weil Sie ohnehin im Browser zuschauen), benutzt
+die Anzeige ihn mit und lässt ihn beim Beenden unangetastet. Sie können
+also gleichzeitig auf dem Display **und** im Browser zuschauen.
+
+Warum überhaupt ein Dienst im Hintergrund? Eine Webcam kann immer nur von
+einer Stelle gleichzeitig gelesen werden. Deshalb liest der Dienst die
+Kamera, und die Anzeige holt sich das fertige Bild bei ihm ab.
+
+Hinweis: Der automatisch mitgestartete Dienst läuft mit seinen
+Standardwerten (nur auf dem Pi erreichbar, Port 8080). Wenn Sie einen
+anderen Port oder eine Netzfreigabe mit Passwort brauchen, starten Sie
+Dienst und Anzeige weiterhin getrennt (siehe „Starten" oben und „Von
+einem anderen Gerät zuschauen").
+
+Nützliche Angaben:
+
+| Angabe | Wirkung | Standard |
+|---|---|---|
+| `--kamera KENNUNG` | Welche Kamera aufs Display, bei mehreren | erste Kamera |
+| `--skalierung fuellen` | Bild füllt die ganze Fläche (schneidet Ränder ab) | `einpassen` (mit Rand) |
+
+Die Kennung einer Kamera steht auf der Übersichtsseite im Browser und in
+der Startmeldung des Dienstes (hinter `-> /kamera/...`).
+
+Wenn statt des Bildes eine Fehlermeldung zum Framebuffer erscheint:
+Prüfen Sie, ob wirklich ein Display angeschlossen ist. Erscheint
+„nicht erreichbar", läuft der Dienst aus Schritt 1 vermutlich noch nicht
+— die Anzeige versucht es dann von selbst in wachsenden Abständen erneut.
+
 ## Einstellungen
 
 Alles Wichtige steht in `webcam_stream.yml` im Projektverzeichnis, mit
